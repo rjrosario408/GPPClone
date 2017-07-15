@@ -39,11 +39,10 @@ def add_sample_name(data, orientation=0):
         [np.array([sample[i] for i in range(data.shape[1])]), np.array([column[i] for i in range(data.shape[1])])])
     if orientation == 0:
         df = pd.DataFrame(data=data.values, index=rowIndex, columns=column)
-
+        return df
     if orientation == 1:
         df = pd.DataFrame(data=data.values, index=row, columns=colIndex)
-
-    return df
+        return df
 
 
 def get_replicates(raw_data, orientation=0):
