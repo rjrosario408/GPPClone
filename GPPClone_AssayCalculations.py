@@ -97,5 +97,3 @@ def inhibition_curve(data):
     pass
 
 
-def drc(data):
-    pass
