@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 path = "C:/Users/RJ/Desktop/testdir/test.xlsx"
-idk = 'test'
 
 
 def import_data(path):
