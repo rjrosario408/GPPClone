@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-path = "path"
+path = "C:/Users/RJ/Desktop/testdir/test.xlsx"
+
 
 
 def import_data(path):
