@@ -22,6 +22,16 @@ def import_data(path):
 
 
 def labels(data):
+    """
+    Parameters
+    ----------
+    data: takes in imported data
+
+    Returns
+    -------
+    plate labels for rows and columns
+
+    """
     row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
     row = np.array([row[i] for i in range(data.shape[0])])
@@ -88,6 +98,7 @@ def calculate_cv(raw_data, orientation=0):
 
     Returns
     -------
+    cv between replicates depending on desired orientation
 
     """
     if orientation == 0:
