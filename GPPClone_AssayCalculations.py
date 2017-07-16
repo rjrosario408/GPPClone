@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import scipy.optimize as opt
 path = "C:/Users/RJ/Desktop/testdir/test.xlsx"
 
 
@@ -20,6 +21,14 @@ def import_data(path):
     return excel
 
 
+def labels(data):
+    row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+    row = np.array([row[i] for i in range(data.shape[0])])
+    column = np.array([column[i] for i in range(data.shape[1])])
+    return row, column
+
+
 def add_sample_name(data, orientation=0):
     """
     Parameters
@@ -32,18 +41,16 @@ def add_sample_name(data, orientation=0):
     Adds sample name replicates depending on orientation
 
     """
-    row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-    column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
     sample = ['S1', 'S1', 'S2', 'S2', 'S3', 'S3', 'S4', 'S4', 'S5', 'S5', 'S6', 'S6']
     rowIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(data.shape[0])]), np.array([row[i] for i in range(data.shape[0])])])
+        [np.array([sample[i] for i in range(data.shape[0])]), labels(data)[0]])
     colIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(data.shape[1])]), np.array([column[i] for i in range(data.shape[1])])])
+        [np.array([sample[i] for i in range(data.shape[1])]), labels(data)[1]])
     if orientation == 0:
-        df = pd.DataFrame(data=data.values, index=rowIndex, columns=column)
+        df = pd.DataFrame(data=data.values, index=rowIndex, columns=labels(data)[1])
         return df
     if orientation == 1:
-        df = pd.DataFrame(data=data.values, index=row, columns=colIndex)
+        df = pd.DataFrame(data=data.values, index=labels(data)[0], columns=colIndex)
         return df
 
 
@@ -112,12 +119,10 @@ def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, grap
 
     """
     if graph_type == 'inhibition':
-        concentrations = pd.DataFrame(data={'Dilution Factor': starting_concentration * np.power(dilution_ratio,
-                                                                                                 range(n_dilutions))})
+        concentrations = np.array(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
         return concentrations
     if graph_type == 'drc':
-        concentrations = pd.DataFrame(data={'Dilution Factor': starting_concentration / np.power(dilution_ratio,
-                                                                                                 range(n_dilutions))})
+        concentrations = starting_concentration / np.power(dilution_ratio, range(n_dilutions))
         return concentrations
 
 
@@ -135,9 +140,41 @@ def log_dilution(concentrations):
     return np.log10(concentrations)
 
 
-def inhibition_response(data):
-    pass
+def inhibition(concentration, bottom, top, logIC50, hill_slope):
+    """
+    Parameters
+    ----------
+    concentration: list of concentrations in log
+    bottom: bottom of curve
+    top: top of curve
+    locIC50: LogIC50
+    hill_slope: HillSlope
+
+    Returns
+    -------
+    Response
+
+    """
+    return bottom + (top - bottom)/(1+np.power(10, ((logIC50-concentration) * hill_slope)))
 
 
-def drc(data):
-    pass
+def inhibition_coefficients(data, concentrations):
+    """
+    Parameters
+    ----------
+    data: labeled data
+    concentrations: concentrations
+
+    Returns
+    -------
+    coefficients for each replicate
+    """
+    idklmao =[]
+    for i, j in data.groupby(level=0):
+        replicate_average = np.mean(j, axis=0)
+        coefficients, d = opt.curve_fit(inhibition, concentrations, replicate_average)
+        print(coefficients)
+        idklmao.append(coefficients)
+    return idklmao
+
+
