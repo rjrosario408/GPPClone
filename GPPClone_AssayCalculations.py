@@ -93,7 +93,22 @@ def calculate_cv(raw_data, orientation=0):
             return cv
 
 
-def inhibition_curve(data):
+def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type='inhibition'):
+    if graph_type == 'inhibition':
+        concentrations = pd.DataFrame(data={'Dilution Factor': starting_concentration * np.power(dilution_ratio,
+                                                                                                 range(n_dilutions))})
+        return concentrations
+    if graph_type == 'drc':
+        concentrations = pd.DataFrame(data={'Dilution Factor': starting_concentration / np.power(dilution_ratio,
+                                                                                                 range(n_dilutions))})
+        return concentrations
+
+
+def log_dilution(concentrations):
+    return np.log10(concentrations)
+
+
+def inhibition_response(data):
     pass
 
 
