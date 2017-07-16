@@ -147,7 +147,7 @@ def inhibition(concentration, bottom, top, logIC50, hill_slope):
     concentration: list of concentrations in log
     bottom: bottom of curve
     top: top of curve
-    locIC50: LogIC50
+    logIC50: LogIC50
     hill_slope: HillSlope
 
     Returns
@@ -163,17 +163,19 @@ def inhibition_coefficients(data, concentrations):
     Parameters
     ----------
     data: labeled data
-    concentrations: concentrations
+    concentrations: concentrations in log
 
     Returns
     -------
     coefficients for each replicate
+
     """
-    temp =[]
+    coefficient_storage = []
     for i, j in data.groupby(level=0):
         replicate_average = np.mean(j, axis=0)
         coefficients, d = opt.curve_fit(inhibition, concentrations, replicate_average)
-        print(coefficients)
-        temp.append(coefficients)
-    return temp
+        curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
+        coefficient_storage.append(curve_coefficients)
+    coefficient_storage = pd.DataFrame(data=coefficient_storage)
+    return coefficient_storage
 
