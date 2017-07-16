@@ -14,6 +14,7 @@ def import_data(path):
     Returns
     -------
     imported data from excel file without labels
+
     """
     excel = pd.read_excel(path, header=None)
     return excel
@@ -29,6 +30,7 @@ def add_sample_name(data, orientation=0):
     Returns
     -------
     Adds sample name replicates depending on orientation
+
     """
     row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
@@ -54,10 +56,12 @@ def get_replicates(raw_data, orientation=0):
 
     Returns
     -------
+    Replicate separation depending on plate orientation
 
     Warning
     -------
     You're not supposed to call list/tuple with []. idk how to get rid of it or what to change it to
+
     """
 
     if np.shape(raw_data)[0] % 2 != 0 or np.shape(raw_data)[1] % 2 != 0:
@@ -94,6 +98,19 @@ def calculate_cv(raw_data, orientation=0):
 
 
 def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type='inhibition'):
+    """
+    Parameters
+    ----------
+    starting_concentration: desired starting concentration for assay
+    dilution_ratio: desired dilution ratio for serial dilutions
+    n_dilutions: number of dilutions
+    graph_type: inhibition or drc
+
+    Returns
+    -------
+    x-axis concentrations for assays in non log
+
+    """
     if graph_type == 'inhibition':
         concentrations = pd.DataFrame(data={'Dilution Factor': starting_concentration * np.power(dilution_ratio,
                                                                                                  range(n_dilutions))})
