@@ -169,12 +169,11 @@ def inhibition_coefficients(data, concentrations):
     -------
     coefficients for each replicate
     """
-    idklmao =[]
+    temp =[]
     for i, j in data.groupby(level=0):
         replicate_average = np.mean(j, axis=0)
         coefficients, d = opt.curve_fit(inhibition, concentrations, replicate_average)
         print(coefficients)
-        idklmao.append(coefficients)
-    return idklmao
-
+        temp.append(coefficients)
+    return temp
 
