@@ -122,6 +122,16 @@ def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, grap
 
 
 def log_dilution(concentrations):
+    """
+    Parameters
+    ----------
+    concentrations: concentrations
+
+    Returns
+    -------
+    log(concentrations)
+
+    """
     return np.log10(concentrations)
 
 
