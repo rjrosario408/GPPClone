@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
-path = "C:/Users/RJ/Desktop/testdir/test.xlsx"
+location = "C:/Users/RJ/Desktop/testdir/lmao_test.xlsx"
 
 
 def import_data(path):
@@ -21,11 +21,11 @@ def import_data(path):
     return excel
 
 
-def labels(data):
+def labels(imported_data):
     """
     Parameters
     ----------
-    data: takes in imported data
+    imported_data: takes in imported data
 
     Returns
     -------
@@ -34,16 +34,16 @@ def labels(data):
     """
     row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
-    row = np.array([row[i] for i in range(data.shape[0])])
-    column = np.array([column[i] for i in range(data.shape[1])])
+    row = np.array([row[i] for i in range(imported_data.shape[0])])
+    column = np.array([column[i] for i in range(imported_data.shape[1])])
     return row, column
 
 
-def add_sample_name(data, orientation=0):
+def add_sample_name(imported_data, orientation=0):
     """
     Parameters
     ----------
-    data: imported data
+    imported_data: imported data
     orientation: same convention as axis
 
     Returns
@@ -53,14 +53,14 @@ def add_sample_name(data, orientation=0):
     """
     sample = ['S1', 'S1', 'S2', 'S2', 'S3', 'S3', 'S4', 'S4', 'S5', 'S5', 'S6', 'S6']
     rowIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(data.shape[0])]), labels(data)[0]])
+        [np.array([sample[i] for i in range(imported_data.shape[0])]), labels(imported_data)[0]])
     colIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(data.shape[1])]), labels(data)[1]])
+        [np.array([sample[i] for i in range(imported_data.shape[1])]), labels(imported_data)[1]])
     if orientation == 0:
-        df = pd.DataFrame(data=data.values, index=rowIndex, columns=labels(data)[1])
+        df = pd.DataFrame(data=imported_data.values, index=rowIndex, columns=labels(imported_data)[1])
         return df
     if orientation == 1:
-        df = pd.DataFrame(data=data.values, index=labels(data)[0], columns=colIndex)
+        df = pd.DataFrame(data=imported_data.values, index=labels(imported_data)[0], columns=colIndex)
         return df
 
 
@@ -169,6 +169,16 @@ def inhibition(concentration, bottom, top, logIC50, hill_slope):
     return bottom + (top - bottom)/(1+np.power(10, ((logIC50-concentration) * hill_slope)))
 
 
+def transform_y(named_data):
+    y_transform =[]
+    for i, j in named_data.groupby(level=0):
+        length = j.shape[1]-1
+        min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
+        max = np.average([j.iloc[0, length], j.iloc[1, length]])
+        y_transform.append(np.average(j.apply(lambda x: 100-((x-min)/(max-min)) * 100), axis=0))
+    return pd.DataFrame(data=y_transform)
+
+
 def inhibition_coefficients(data, concentrations):
     """
     Parameters
@@ -182,11 +192,11 @@ def inhibition_coefficients(data, concentrations):
 
     """
     coefficient_storage = []
-    for i, j in data.groupby(level=0):
-        replicate_average = np.mean(j, axis=0)
-        coefficients, d = opt.curve_fit(inhibition, concentrations, replicate_average)
+    data = np.array(data)
+    for i in data:
+        print('y', i[:])
+        coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
     coefficient_storage = pd.DataFrame(data=coefficient_storage)
     return coefficient_storage
-
