@@ -64,55 +64,24 @@ def add_sample_name(imported_data, orientation=0):
         return df
 
 
-def get_replicates(raw_data, orientation=0):
+def calculate_cv(data):
     """
     Parameters
     ----------
-    raw_data: raw data from file
-    orientation: same convention as axis function. used to decide the axis of replicates to be returned
+    data: labeled data
 
     Returns
     -------
-    Replicate separation depending on plate orientation
-
-    Warning
-    -------
-    You're not supposed to call list/tuple with []. idk how to get rid of it or what to change it to
+    CV for each replicate
 
     """
-
-    if np.shape(raw_data)[0] % 2 != 0 or np.shape(raw_data)[1] % 2 != 0:
-        return 'uneven replicates! cannot split evenly'
-    if orientation == 0:
-        return np.split(raw_data, np.shape(raw_data)[0]/2, axis=0)
-    if orientation == 1:
-        return np.split(raw_data, np.shape(raw_data)[1]/2, axis=1)
-
-
-def calculate_cv(raw_data, orientation=0):
-    """
-    Parameters
-    ----------
-    raw_data: raw data from file
-    orientation: same convention as axis function. used to determine axis calculations
-
-    Returns
-    -------
-    cv between replicates depending on desired orientation
-
-    """
-    if orientation == 0:
-        average = np.array([np.mean(x, axis=0) for x in get_replicates(raw_data, orientation=0)])
-        std = np.array([np.std(x, axis=0, ddof=1) for x in get_replicates(raw_data, orientation=0)])
-        with np.errstate(divide='ignore', invalid='ignore'):
-            cv = pd.DataFrame(np.array(np.nan_to_num(std/average)) * 100)
-            return cv
-    if orientation == 1:
-        average = np.array([np.mean(x, axis=1) for x in get_replicates(raw_data, orientation=1)])
-        std = np.array([np.std(x, axis=1, ddof=1) for x in get_replicates(raw_data, orientation=1)])
-        with np.errstate(divide='ignore', invalid='ignore'):
-            cv = pd.DataFrame(np.array(np.nan_to_num(std/average)) * 100)
-            return cv
+    if not isinstance(data.index, pd.core.index.MultiIndex):
+        data = data.T
+    average = np.array([np.mean(j, axis=0) for i, j in data.groupby(level=0)])
+    std = np.array([np.std(j, axis=0, ddof=1) for i, j in data.groupby(level=0)])
+    with np.errstate(divide='ignore', invalid='ignore'):
+        cv = pd.DataFrame(np.array(np.nan_to_num(std/average)) * 100)
+        return cv
 
 
 def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type='inhibition'):
