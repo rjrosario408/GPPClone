@@ -170,12 +170,22 @@ def inhibition(concentration, bottom, top, logIC50, hill_slope):
 
 
 def transform_y(named_data):
-    y_transform =[]
+    """
+    Parameters
+    ----------
+    named_data: named data
+
+    Returns
+    -------
+    100 - feature scaled *100 value of response
+
+    """
+    y_transform = []
     for i, j in named_data.groupby(level=0):
         length = j.shape[1]-1
-        min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
-        max = np.average([j.iloc[0, length], j.iloc[1, length]])
-        y_transform.append(np.average(j.apply(lambda x: 100-((x-min)/(max-min)) * 100), axis=0))
+        x_min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
+        x_max = np.average([j.iloc[0, length], j.iloc[1, length]])
+        y_transform.append(np.average(j.apply(lambda x: 100-((x-x_min)/(x_max-x_min)) * 100), axis=0)[1:length])
     return pd.DataFrame(data=y_transform)
 
 
@@ -194,9 +204,9 @@ def inhibition_coefficients(data, concentrations):
     coefficient_storage = []
     data = np.array(data)
     for i in data:
-        print('y', i[:])
         coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
     coefficient_storage = pd.DataFrame(data=coefficient_storage)
     return coefficient_storage
+
