@@ -102,7 +102,7 @@ def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, grap
         concentrations = np.array(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
         return concentrations
     if graph_type == 'drc':
-        concentrations = starting_concentration / np.power(dilution_ratio, range(n_dilutions))
+        concentrations = np.array(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
         return concentrations
 
 
@@ -138,19 +138,21 @@ def inhibition(concentration, bottom, top, logIC50, hill_slope):
     return bottom + (top - bottom)/(1+np.power(10, ((logIC50-concentration) * hill_slope)))
 
 
-def transform_y(named_data):
+def transform_y(data):
     """
     Parameters
     ----------
-    named_data: named data
+    data: named data
 
     Returns
     -------
     100 - feature scaled *100 value of response
 
     """
+    if not isinstance(data.index, pd.core.index.MultiIndex):
+        data = data.T
     y_transform = []
-    for i, j in named_data.groupby(level=0):
+    for i, j in data.groupby(level=0):
         length = j.shape[1]-1
         x_min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
         x_max = np.average([j.iloc[0, length], j.iloc[1, length]])
@@ -158,11 +160,11 @@ def transform_y(named_data):
     return pd.DataFrame(data=y_transform)
 
 
-def inhibition_coefficients(data, concentrations):
+def inhibition_coefficients(response, concentrations):
     """
     Parameters
     ----------
-    data: labeled data
+    response: transformed y response
     concentrations: concentrations in log
 
     Returns
@@ -171,11 +173,11 @@ def inhibition_coefficients(data, concentrations):
 
     """
     coefficient_storage = []
-    data = np.array(data)
-    for i in data:
+    response = np.array(response)
+    for i in response:
         coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
-    coefficient_storage = pd.DataFrame(data=coefficient_storage)
+    coefficient_storage = pd.DataFrame(data=coefficient_storage).round(decimals=2)
     return coefficient_storage
 
