@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
-location = "C:/Users/RJ/Desktop/testdir/lmao_test.xlsx"
+location = "C:/Users/RJ/Desktop/testdir/test20170720/Raw.xlsx"
 
 
 def import_data(path):
@@ -99,10 +99,10 @@ def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, grap
 
     """
     if graph_type == 'inhibition':
-        concentrations = np.array(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
+        concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
         return concentrations
     if graph_type == 'drc':
-        concentrations = np.array(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
+        concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
         return concentrations
 
 
@@ -173,11 +173,11 @@ def inhibition_coefficients(response, concentrations):
 
     """
     coefficient_storage = []
+    concentrations = concentrations.iloc[:, 0]
     response = np.array(response)
     for i in response:
         coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
-    coefficient_storage = pd.DataFrame(data=coefficient_storage).round(decimals=2)
+    coefficient_storage = pd.DataFrame(data=coefficient_storage).round(decimals=3)
     return coefficient_storage
-
