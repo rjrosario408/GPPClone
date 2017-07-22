@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
-location = "C:/Users/RJ/Desktop/testdir/test20170720/Raw.xlsx"
+import seaborn as sns
+location = "C:/Users/RJ/Desktop/testdir/lmao_test.xlsx"
 
 
 def import_data(path):
@@ -157,7 +158,7 @@ def transform_y(data):
         x_min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
         x_max = np.average([j.iloc[0, length], j.iloc[1, length]])
         y_transform.append(np.average(j.apply(lambda x: 100-((x-x_min)/(x_max-x_min)) * 100), axis=0)[1:length])
-    return pd.DataFrame(data=y_transform)
+    return pd.DataFrame(data=y_transform, columns=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 
 def inhibition_coefficients(response, concentrations):
@@ -179,5 +180,34 @@ def inhibition_coefficients(response, concentrations):
         coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
-    coefficient_storage = pd.DataFrame(data=coefficient_storage).round(decimals=3)
+    coefficient_storage = pd.DataFrame(data=coefficient_storage,
+                                       index=[('S'+str(i+1)) for i in range(len(coefficient_storage))]).round(decimals=3)
     return coefficient_storage
+
+
+x = get_concentrations(1000, 2, 10)
+x2 = log_dilution(x)
+y = transform_y(add_sample_name((import_data(location))))
+fit = inhibition_coefficients(y, x2)
+cv = calculate_cv(add_sample_name((import_data(location))))
+
+
+def graph(concentrations, response, cv, fit):
+    concentrations = concentrations.iloc[:, 0]
+    cv = cv.iloc[:, 1:cv.shape[1]-1]
+    sns.plt.axes(xscale='log')
+    sns.plt.xlabel("Log Dilutions")
+    sns.plt.ylabel("%inhibition")
+    sns.plt.title("%inhibition vs Log Dilutions")
+    for i in range(y.shape[0]):
+        sns.plt.errorbar(concentrations, response.values[i], yerr=cv.values[i], fmt='-o', label=('S'+str(i+1)))
+    sns.plt.legend()
+    sns.plt.table(cellText=fit.values, colWidths=[0.25] * len(fit.columns), rowLabels=fit.index, colLabels=fit.columns,
+                  cellLoc='center', rowLoc='center', loc='bottom')
+
+
+graph(x, y, cv, fit)
+sns.plt.tight_layout(pad=2)
+sns.plt.show()
+
+
