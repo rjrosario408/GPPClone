@@ -166,6 +166,28 @@ def transform_y(data):
     return pd.concat(y_transform)
 
 
+def error_transform_y(data):
+    """
+    Parameters
+    ----------
+    data: named data
+
+    Returns
+    -------
+    STD between transformed replicates
+
+    """
+    if not isinstance(data.index, pd.core.index.MultiIndex):
+        data = data.T
+    y_transform_error = []
+    for i, j in data.groupby(level=0):
+        x_min = j.loc[:, '1'].mean()
+        x_max = j.loc[:, '12'].mean()
+        y_transform_error.append(j.loc[:, '2':'11'].apply
+                           (lambda x: 100-((x-x_min)/(x_max-x_min)) * 100).std(axis=0, level=0, ddof=1))
+    return pd.concat(y_transform_error)
+
+
 def inhibition_coefficients(response, concentrations):
     """
     Parameters
@@ -189,38 +211,32 @@ def inhibition_coefficients(response, concentrations):
     return coefficient_storage
 
 
-def graph(concentrations, response, cv, fit):
+def inhibition_graph(data, concentrations):
     """
     Parameters
     ----------
-    concentrations: concentrations in non log
-    response: transformed y data
-    cv: right now using CV as error calculation as a place holder. will change in the future for actual error calc
-    fit: coefficients from inhibitions coefficients
+    data: named data
+    concentrations: desired x values in non log.
 
     Returns
     -------
-    inhibition vs log dilution graph and a table with all the fit coefficients
+    inhibition response vs. log dilutions and table with calculated fit parameter
 
     """
+    log_x = log_dilution(concentrations)
     concentrations = concentrations.iloc[:, 0]
-    cv = cv.iloc[:, 1:cv.shape[1]-1]
+    y = transform_y(data)
+    error = error_transform_y(data)
+    print(error)
+    fit = inhibition_coefficients(y, log_x)
+
     sns.plt.axes(xscale='log')
     sns.plt.xlabel("Log Dilutions")
     sns.plt.ylabel("%inhibition")
     sns.plt.title("%inhibition vs Log Dilutions")
-    for i in range(response.shape[0]):
-        sns.plt.errorbar(concentrations, response.values[i], yerr=cv.values[i], fmt='-o', label=('S'+str(i+1)))
+
+    for i in range(y.shape[0]):
+        sns.plt.errorbar(concentrations, y.values[i], yerr=error.values[i], fmt='-o', label=('S'+str(i+1)))
     sns.plt.legend()
     sns.plt.table(cellText=fit.values, colWidths=[0.25] * len(fit.columns), rowLabels=fit.index, colLabels=fit.columns,
                   cellLoc='center', rowLoc='center', loc='bottom')
-
-# path2 = "C:/Users/RJ/Desktop/testdir/test20170724/Raw.xlsx"
-# x = get_concentrations(2000000, 2, 11, graph_type='drc')
-# x = log_dilution(x)
-# y = transform_drcy(add_sample_name(import_data(path2)))
-# print(y)
-# print(x)
-# print (drc_coefficients(y,x))
-
-
