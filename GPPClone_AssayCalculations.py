@@ -180,9 +180,8 @@ def inhibition_coefficients(response, concentrations):
     """
     coefficient_storage = []
     concentrations = concentrations.iloc[:, 0]
-    response = np.array(response)
-    for i in response:
-        coefficients, d = opt.curve_fit(inhibition, concentrations, i[:])
+    for i, j in response.groupby(level=0):
+        coefficients, d = opt.curve_fit(inhibition, concentrations, j.iloc[0, :])
         curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
         coefficient_storage.append(curve_coefficients)
     coefficient_storage = pd.DataFrame(data=coefficient_storage,
