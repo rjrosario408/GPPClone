@@ -22,24 +22,6 @@ def import_data(path):
     return excel
 
 
-def labels(imported_data):
-    """
-    Parameters
-    ----------
-    imported_data: takes in imported data
-
-    Returns
-    -------
-    plate labels for rows and columns
-
-    """
-    row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-    column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
-    row = np.array([row[i] for i in range(imported_data.shape[0])])
-    column = np.array([column[i] for i in range(imported_data.shape[1])])
-    return row, column
-
-
 def add_sample_name(imported_data, orientation=0):
     """
     Parameters
@@ -52,16 +34,21 @@ def add_sample_name(imported_data, orientation=0):
     Adds sample name replicates depending on orientation
 
     """
+
     sample = ['S1', 'S1', 'S2', 'S2', 'S3', 'S3', 'S4', 'S4', 'S5', 'S5', 'S6', 'S6']
+    row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    column = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+    row = np.array([row[i] for i in range(imported_data.shape[0])])
+    column = np.array([column[i] for i in range(imported_data.shape[1])])
     rowIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(imported_data.shape[0])]), labels(imported_data)[0]])
+        [np.array([sample[i] for i in range(imported_data.shape[0])]), row])
     colIndex = pd.MultiIndex.from_arrays(
-        [np.array([sample[i] for i in range(imported_data.shape[1])]), labels(imported_data)[1]])
+        [np.array([sample[i] for i in range(imported_data.shape[1])]), column])
     if orientation == 0:
-        df = pd.DataFrame(data=imported_data.values, index=rowIndex, columns=labels(imported_data)[1])
+        df = pd.DataFrame(data=imported_data.values, index=rowIndex, columns=column)
         return df
     if orientation == 1:
-        df = pd.DataFrame(data=imported_data.values, index=labels(imported_data)[0], columns=colIndex)
+        df = pd.DataFrame(data=imported_data.values, index=row, columns=colIndex)
         return df
 
 
@@ -78,10 +65,8 @@ def calculate_cv(data):
     """
     if not isinstance(data.index, pd.core.index.MultiIndex):
         data = data.T
-    average = np.array([np.mean(j, axis=0) for i, j in data.groupby(level=0)])
-    std = np.array([np.std(j, axis=0, ddof=1) for i, j in data.groupby(level=0)])
     with np.errstate(divide='ignore', invalid='ignore'):
-        cv = pd.DataFrame(np.array(np.nan_to_num(std/average)) * 100)
+        cv = data.std(axis=0, level=0, ddof=1)/data.mean(axis=0, level=0) * 100
         return cv
 
 
@@ -100,10 +85,12 @@ def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, grap
 
     """
     if graph_type == 'inhibition':
-        concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
+        concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)),
+                                      index=[i for i in range(1, n_dilutions+1)])
         return concentrations
     if graph_type == 'drc':
-        concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)))
+        concentrations = pd.DataFrame(starting_concentration / np.power(dilution_ratio, range(n_dilutions)),
+                                      index=[i for i in range(1, n_dilutions+1)])
         return concentrations
 
 
@@ -133,10 +120,28 @@ def inhibition(concentration, bottom, top, logIC50, hill_slope):
 
     Returns
     -------
-    Response
+    Inhibition Response
 
     """
     return bottom + (top - bottom)/(1+np.power(10, ((logIC50-concentration) * hill_slope)))
+
+
+def drc(concentration, bottom, top, logEC50, hill_slope):
+    """
+    Parameters
+    ----------
+    concentration: list of concentrations in log
+    bottom: bottom of curve
+    top: top of curve
+    logEC50: LogIC50
+    hill_slope: HillSlope
+
+    Returns
+    -------
+    Dose Response
+
+    """
+    return bottom + (top - bottom)/(1+np.power(10, ((logEC50-concentration) * hill_slope)))
 
 
 def transform_y(data):
@@ -154,11 +159,11 @@ def transform_y(data):
         data = data.T
     y_transform = []
     for i, j in data.groupby(level=0):
-        length = j.shape[1]-1
-        x_min = np.average([j.iloc[0, 0], j.iloc[1, 0]])
-        x_max = np.average([j.iloc[0, length], j.iloc[1, length]])
-        y_transform.append(np.average(j.apply(lambda x: 100-((x-x_min)/(x_max-x_min)) * 100), axis=0)[1:length])
-    return pd.DataFrame(data=y_transform, columns=[i for i in range(1, len(y_transform[1])+1)])
+        x_min = j.loc[:, '1'].mean()
+        x_max = j.loc[:, '12'].mean()
+        y_transform.append(j.loc[:, '2':'11'].apply
+                           (lambda x: 100-((x-x_min)/(x_max-x_min)) * 100).mean(axis=0, level=0))
+    return pd.concat(y_transform)
 
 
 def inhibition_coefficients(response, concentrations):
@@ -210,3 +215,13 @@ def graph(concentrations, response, cv, fit):
     sns.plt.legend()
     sns.plt.table(cellText=fit.values, colWidths=[0.25] * len(fit.columns), rowLabels=fit.index, colLabels=fit.columns,
                   cellLoc='center', rowLoc='center', loc='bottom')
+
+# path2 = "C:/Users/RJ/Desktop/testdir/test20170724/Raw.xlsx"
+# x = get_concentrations(2000000, 2, 11, graph_type='drc')
+# x = log_dilution(x)
+# y = transform_drcy(add_sample_name(import_data(path2)))
+# print(y)
+# print(x)
+# print (drc_coefficients(y,x))
+
+
