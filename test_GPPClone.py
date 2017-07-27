@@ -37,3 +37,22 @@ def test_inhibition_coefficients():
     inhibition_coefficients_gpp = pd.read_excel(inhibition_coefficients_path)
     pdt.assert_frame_equal(inhibition_coefficients_code, inhibition_coefficients_gpp)
 
+
+def test_normalize_y_drc_20170726():
+    raw = "C:/Users/RJ/Desktop/testdir/test20170726/Raw.xlsx"
+    normalize_y_path = "C:/Users/RJ/Desktop/testdir/test20170726/normalize_y_drc.xlsx"
+    normalize_y_code = GPPCA.normalize_y_drc(GPPCA.add_sample_name(GPPCA.import_data(raw)))
+    normalize_y_gpp = pd.read_excel(normalize_y_path)
+    normalize_y_gpp.columns = normalize_y_gpp.columns.astype(str)
+    pdt.assert_almost_equal(normalize_y_code, normalize_y_gpp)
+
+
+def test_drc_coefficients():
+    raw = "C:/Users/RJ/Desktop/testdir/test20170726/Raw.xlsx"
+    drc_coefficients_path = "C:/Users/RJ/Desktop/testdir/test20170726/drc_coefficients.xlsx"
+    response = GPPCA.normalize_y_drc(GPPCA.add_sample_name(GPPCA.import_data(raw)))
+    logx = GPPCA.log_dilution(GPPCA.get_concentrations(2000000, 2, 11, graph_type='drc'))
+    drc_coefficients_code = GPPCA.drc_coefficients(response, logx)
+    drc_coefficients_gpp = pd.read_excel(drc_coefficients_path)
+    pdt.assert_frame_equal(drc_coefficients_code, drc_coefficients_gpp)
+
