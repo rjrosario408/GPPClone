@@ -1,5 +1,6 @@
 # GPPClone
 
 - Using Python to replicate the data analysis I do at work
-- Currently calculates CV and inhibition coefficients for 4 parameter non linear regression in x direction
-- To do: graph, drc, and interpolation 
+- Calcualtes %CV, fit parameters, and transformations
+- Returns either DRC or Inhibition graph with stdev error 
+- To do: Refactor code to utilize classes, fix figure layout, interpolation  
