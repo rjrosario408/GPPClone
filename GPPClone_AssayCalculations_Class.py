@@ -2,13 +2,23 @@ import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 import seaborn as sns
-location = "C:/Users/RJ/Desktop/testdir/test20170720/Raw.xlsx"
+from abc import ABCMeta, abstractmethod
 
 
 class Nab (object):
     """
-    Take in drc or inhibition data and return graph
+    Nab Analysis
     """
+
+    __metaclass__ = ABCMeta
+
+    start_response_column = ' '
+    end_response_column = ' '
+    graph_type = ' '
+    log_50 = ' '
+    start_concentration = 0
+    dilution_ratio = 0
+    number_dilutions = 0
 
     def __init__(self, path, orientation=0):
         self.path = path
@@ -37,13 +47,12 @@ class Nab (object):
     def calculate_cv(self):
         if not isinstance(self.data.index, pd.core.index.MultiIndex):
             self.data = self.data.T
-
         with np.errstate(divide='ignore', invalid='ignore'):
             cv = self.data.std(axis=0, level=0, ddof=1) / self.data.mean(axis=0, level=0) * 100
             return cv
 
     @staticmethod
-    def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type='inhibition'):
+    def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type):
         if graph_type == 'inhibition':
             concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)),
                                           index=[i for i in range(1, n_dilutions + 1)])
@@ -58,8 +67,8 @@ class Nab (object):
         return np.log10(concentrations)
 
     @staticmethod
-    def inhibition(concentration, bottom, top, log_ic50, hill_slope):
-        return bottom + (top - bottom) / (1 + np.power(10, ((log_ic50 - concentration) * hill_slope)))
+    def response(concentration, bottom, top, log_50, hill_slope):
+        return bottom + (top - bottom) / (1 + np.power(10, ((log_50 - concentration) * hill_slope)))
 
     def transform_y(self):
         if not isinstance(self.data.index, pd.core.index.MultiIndex):
@@ -68,7 +77,7 @@ class Nab (object):
         for i, j in self.data.groupby(level=0):
             x_min = j.loc[:, '1'].mean()
             x_max = j.loc[:, '12'].mean()
-            y_transform.append(j.loc[:, '2':'11'].apply
+            y_transform.append(j.loc[:, self.start_response_column:self.end_response_column].apply
                                (lambda x: 100 - ((x - x_min) / (x_max - x_min)) * 100).mean(axis=0, level=0))
         return pd.concat(y_transform)
 
@@ -79,23 +88,51 @@ class Nab (object):
         for i, j in self.data.groupby(level=0):
             x_min = j.loc[:, '1'].mean()
             x_max = j.loc[:, '12'].mean()
-            y_transform_error.append(j.loc[:, '2':'11'].apply
+            y_transform_error.append(j.loc[:, self.start_response_column:self.end_response_column].apply
                                      (lambda x: 100 - ((x - x_min) / (x_max - x_min)) * 100).std(axis=0, level=0,
                                                                                                  ddof=1))
         return pd.concat(y_transform_error)
 
-    def inhibition_coefficients(self):
+    def coefficients(self):
         coefficient_storage = []
-        concentrations = Nab.log_dilution(Nab.get_concentrations(1000, 2, 10)).iloc[:, 0]
+        concentrations = Nab.log_dilution(Nab.get_concentrations(self.start_concentration,
+                                                                 self.dilution_ratio, self.number_dilutions,
+                                                                 self.graph_type)).iloc[:, 0]
         for i, j in self.transform_y().groupby(level=0):
-            coefficients, d = opt.curve_fit(Nab.inhibition, concentrations, j.iloc[0, :])
-            curve_coefficients = dict(zip(['top', 'bottom', 'logIC50', 'hill_slope'], coefficients))
+            coefficients, d = opt.curve_fit(Nab.response, concentrations, j.iloc[0, :])
+            curve_coefficients = dict(zip(['top', 'bottom', self.log_50, 'hill_slope'], coefficients))
             coefficient_storage.append(curve_coefficients)
         coefficient_storage = pd.DataFrame(
             data=coefficient_storage, index=[('S' + str(i + 1)) for i in range(len(coefficient_storage))]).round(
             decimals=3)
         return coefficient_storage
 
-    def __repr__(self):
-        return "<%s>" % self.data
+    @abstractmethod
+    def graph(self):
+        pass
 
+
+class DoseResponse(Nab):
+    start_response_column = '1'
+    end_response_column = '11'
+    graph_type = 'drc'
+    log_50 = 'LogEC50'
+    start_concentration = 2000000
+    dilution_ratio = 2
+    number_dilutions = 11
+
+    def graph(self):
+        return 'DRC'
+
+
+class Inhibition(Nab):
+    start_response_column = '2'
+    end_response_column = '11'
+    graph_type = 'inhibition'
+    log_50 = 'LogIC50'
+    start_concentration = 1000
+    dilution_ratio = 2
+    number_dilutions = 10
+
+    def graph(self):
+        return 'inhibition'
