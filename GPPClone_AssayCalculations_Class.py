@@ -8,7 +8,12 @@ from abc import ABCMeta, abstractmethod
 
 class Nab (object):
     """
-    Nab Analysis
+    Return Response vs Logx graph and fit parameters
+
+    Attributes:
+        path: excel file of raw data
+        orientation: changes the orientation of calculations
+        data: labeled raw data
 
     """
 
@@ -32,6 +37,25 @@ class Nab (object):
 
     @staticmethod
     def get_concentrations(starting_concentration, dilution_ratio, n_dilutions, graph_type):
+        """
+        Parameters
+        ----------
+        starting_concentration: int
+            Initial concentration
+        dilution_ratio: int
+            Ratio for each serial dilution
+        n_dilutions: int
+            Number of dilutions
+        graph_type: string
+            'inhibition' concentration increase
+            'drc' concentration decrease
+
+        Returns
+        -------
+        concentrations: pd.DataFrame
+            Mx1 concentration dilutions
+
+        """
         if graph_type == 'inhibition':
             concentrations = pd.DataFrame(starting_concentration * np.power(dilution_ratio, range(n_dilutions)),
                                           index=[i for i in range(1, n_dilutions + 1)])
@@ -43,13 +67,49 @@ class Nab (object):
 
     @staticmethod
     def log_dilution(concentrations):
+        """
+        Parameters
+        ----------
+        concentrations: pd.DataFrame
+            DataFrame of concentrations
+
+        Returns
+        -------
+        concentrations: pd.DataFrame
+            concentrations = log(concentrations)
+
+        """
         return np.log10(concentrations)
 
     @staticmethod
     def response(concentration, bottom, top, log_50, hill_slope):
+        """
+        concentrations: int
+            concentration
+        bottom: int
+            bottom point of response curve
+        top: int
+            top of response curve
+        log_50: int
+            middle point of response
+        hill_slope
+            hill slope for response curve
+
+        Returns
+        -------
+        response: int
+
+        """
         return bottom + (top - bottom) / (1 + np.power(10, ((log_50 - concentration) * hill_slope)))
 
     def add_sample_name(self):
+        """
+        Returns
+        -------
+        df: pd.DataFrame
+            Labeled DataFrame of instance with multi index
+
+        """
         excel = pd.read_excel(self.path, header=None)
         sample = ['S1', 'S1', 'S2', 'S2', 'S3', 'S3', 'S4', 'S4', 'S5', 'S5', 'S6', 'S6']
         row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -68,6 +128,13 @@ class Nab (object):
             return df
 
     def calculate_cv(self):
+        """
+        Returns
+        -------
+        cv: pd.DataFrame
+            Coefficient of variation
+
+        """
         if not isinstance(self.data.index, pd.core.index.MultiIndex):
             self.data = self.data.T
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -75,6 +142,13 @@ class Nab (object):
             return cv
 
     def transform_y(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            Averaged y transformation of each replicate
+
+        """
         if not isinstance(self.data.index, pd.core.index.MultiIndex):
             self.data = self.data.T
         y_transform = []
@@ -86,6 +160,13 @@ class Nab (object):
         return pd.concat(y_transform)
 
     def error_transform_y(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            Averaged standard deviation between transformed replicates
+
+        """
         if not isinstance(self.data.index, pd.core.index.MultiIndex):
             self.data = self.data.T
         y_transform_error = []
@@ -98,6 +179,13 @@ class Nab (object):
         return pd.concat(y_transform_error)
 
     def coefficients(self):
+        """
+        Returns
+        -------
+        coefficient_storage: pd.DataFrame
+            fit parameters for graph
+
+        """
         coefficient_storage = []
         concentrations = Nab.log_dilution(Nab.get_concentrations(self.start_concentration,
                                                                  self.dilution_ratio, self.number_dilutions,
@@ -112,6 +200,10 @@ class Nab (object):
         return coefficient_storage
 
     def analyze(self):
+        """
+        Generate graph with table of fit values for each sample
+
+        """
         concentrations = Nab.get_concentrations(self.start_concentration, self.dilution_ratio, self.number_dilutions,
                                                 self.graph_type)
 
@@ -143,6 +235,7 @@ class Nab (object):
 
 
 class DoseResponse(Nab):
+    """ Dose Response"""
     start_response_column = '1'
     end_response_column = '11'
     graph_type = 'drc'
@@ -159,6 +252,7 @@ class DoseResponse(Nab):
 
 
 class Inhibition(Nab):
+    """Inhibition"""
     start_response_column = '2'
     end_response_column = '11'
     graph_type = 'inhibition'
@@ -173,3 +267,4 @@ class Inhibition(Nab):
     def type(self):
         return 'inhibition'
 
+assert isinstance((), Nab)
