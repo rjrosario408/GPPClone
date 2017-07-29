@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 import seaborn as sns
+import matplotlib.pyplot as plt
 from abc import ABCMeta, abstractmethod
 
 
@@ -114,21 +115,27 @@ class Nab (object):
         concentrations = Nab.get_concentrations(self.start_concentration, self.dilution_ratio, self.number_dilutions,
                                                 self.graph_type)
 
+        concentrations = concentrations.iloc[:, 0]
         y = Nab.transform_y(self)
         error = Nab.error_transform_y(self)
         fit = Nab.coefficients(self)
 
-        sns.plt.axes(xscale='log')
-        sns.plt.xlabel(self.x_label)
-        sns.plt.ylabel(self.y_label)
-        sns.plt.title(self.title)
+        axs1 = plt.subplot2grid((6, 1), (0, 0), rowspan=4)
+        axs1.set_xscale("log")
+        axs1.set_title(self.title)
+        axs1.set_xlabel(self.x_label)
+        axs1.set_ylabel(self.y_label)
+
+        axs2 = plt.subplot2grid((6, 1), (5, 0), rowspan=1)
+        axs2.axis('off')
+        axs2.axis('tight')
+        axs2.table(cellText=fit.values, colWidths=[0.25] * len(fit.columns), rowLabels=fit.index,
+                   colLabels=fit.columns,
+                   cellLoc='center', rowLoc='center', loc='center')
 
         for i in range(y.shape[0]):
-            sns.plt.errorbar(concentrations, y.values[i], yerr=error.values[i], fmt='-o', label=('S' + str(i + 1)))
-        sns.plt.legend()
-        sns.plt.table(cellText=fit.values, colWidths=[0.25] * len(fit.columns), rowLabels=fit.index,
-                      colLabels=fit.columns,
-                      cellLoc='center', rowLoc='center', loc='bottom')
+            axs1.errorbar(concentrations, y.values[i], yerr=error.values[i], fmt='-o', label=('S' + str(i + 1)))
+        axs1.legend()
 
     @abstractmethod
     def type(self):
