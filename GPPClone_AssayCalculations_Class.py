@@ -21,6 +21,8 @@ class Nab (object):
     start_response_column = ' '
     end_response_column = ' '
     graph_type = ' '
+    coefficient_label1 = ' '
+    coefficient_label2 = ' '
     log_50 = ' '
     x_label = ' '
     y_label = ' '
@@ -191,7 +193,8 @@ class Nab (object):
                                                                  self.graph_type)).iloc[:, 0]
         for i, j in self.transform_y().groupby(level=0):
             coefficients, d = opt.curve_fit(Nab.response, concentrations, j.iloc[0, :])
-            curve_coefficients = dict(zip(['top', 'bottom', self.log_50, 'hill_slope'], coefficients))
+            curve_coefficients = dict(zip([self.coefficient_label1, self.coefficient_label2,
+                                           self.log_50, 'hill_slope'], coefficients))
             coefficient_storage.append(curve_coefficients)
         coefficient_storage = pd.DataFrame(
             data=coefficient_storage, index=[('S' + str(i + 1)) for i in range(len(coefficient_storage))]).round(
@@ -238,6 +241,8 @@ class DoseResponse(Nab):
     start_response_column = '1'
     end_response_column = '11'
     graph_type = 'drc'
+    coefficient_label1 = 'bottom'
+    coefficient_label2 = 'top'
     log_50 = 'LogEC50'
     start_concentration = 2000000
     dilution_ratio = 2
@@ -255,6 +260,8 @@ class Inhibition(Nab):
     start_response_column = '2'
     end_response_column = '11'
     graph_type = 'inhibition'
+    coefficient_label1 = 'top'
+    coefficient_label2 = 'bottom'
     log_50 = 'LogIC50'
     start_concentration = 1000
     dilution_ratio = 2
@@ -265,3 +272,4 @@ class Inhibition(Nab):
 
     def type(self):
         return 'inhibition'
+
