@@ -266,5 +266,3 @@ class Inhibition(Nab):
 
     def type(self):
         return 'inhibition'
-
-assert isinstance((), Nab)
