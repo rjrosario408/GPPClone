@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
-import seaborn as sns
 import matplotlib.pyplot as plt
 from abc import ABCMeta, abstractmethod
 
