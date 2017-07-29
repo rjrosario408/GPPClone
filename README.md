@@ -5,4 +5,3 @@
 - Returns either DRC or Inhibition graph with stdev error 
 - To do: 
   - Fix label order 
-  - Update tests 
