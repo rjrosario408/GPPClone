@@ -4,5 +4,5 @@
 - Calcualtes %CV, fit parameters, and transformations
 - Returns either DRC or Inhibition graph with stdev error 
 - To do: 
-  - Label order. 
+  - Fix label order 
   - Update tests 
