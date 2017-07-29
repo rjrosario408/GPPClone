@@ -1,4 +1,4 @@
-import GPPClone_AssayCalculations_Class as GPPCA
+import GPPClone_AssayCalculations as GPPCA
 import pandas as pd
 import pandas.util.testing as pdt
 
@@ -46,7 +46,7 @@ def test_normalize_y_drc_20170726():
 
 
 def test_drc_coefficients():
-    raw = GPPCA.DoseResponse("C:/Users/RJ/Desktop/testdir/test20170720/Raw.xlsx")
+    raw = GPPCA.DoseResponse("C:/Users/RJ/Desktop/testdir/test20170726/Raw.xlsx")
     inhibition_coefficients_path = "C:/Users/RJ/Desktop/testdir/test20170726/drc_coefficients.xlsx"
     inhibition_coefficients_code = raw.coefficients()
     inhibition_coefficients_gpp = pd.read_excel(inhibition_coefficients_path)
